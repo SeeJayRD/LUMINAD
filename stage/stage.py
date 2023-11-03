@@ -19,9 +19,11 @@ ADDRESS = ('localhost', 8000)
 TYPES = {'float' : float}
 
 class Stage:
-    '''Hi Bea, figure it out yourself!'''
     def __init__(self):
-        self.ser = serial.Serial('/dev/ttyUSB0', 9600)
+        try:
+            self.ser = serial.Serial('/dev/ttyUSB0', 9600)
+        except serial.SerialException:
+            self.ser = serial.Serial('/dev/ttyUSB1', 9600)
         self.pos_dac = 0
         self.stage_init()
     def address_controller(self):
@@ -63,6 +65,8 @@ class Stage:
         print('edge found')
         print('initializing')
         self.init_params()
+        print('verifying_edge')
+        time.sleep(PAUSE)
         self.find_negative_edge()
         self.define_home()
         print('ready')
