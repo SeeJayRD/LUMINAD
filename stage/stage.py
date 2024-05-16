@@ -17,6 +17,7 @@ t0_dac = 450000
 SPEEDC = 2.99792458e-1
 ADDRESS = ('localhost', 8000)
 TYPES = {'float' : float}
+LOGFILE = '/home/quadro/Logs/stage.log'
 
 class Stage:
     def __init__(self):
@@ -24,12 +25,17 @@ class Stage:
             self.ser = serial.Serial('/dev/ttyUSB0', 9600)
         except serial.SerialException:
             self.ser = serial.Serial('/dev/ttyUSB1', 9600)
+        self.logfile = open(LOGFILE, 'a')
         self.pos_dac = 0
         self.stage_init()
+    def __del__(self):
+        self.shutdown()
+        self.logfile.close()
     def address_controller(self):
-        self.ser.write(b'\x011\r')
+        self.ser.write(b'\x010\r')
         time.sleep(PAUSE)
-        self.ser.readline()
+        Nchar = self.ser.in_waiting
+        self.ser.read(Nchar)
     def enable_amp(self):
         self.ser.write(b'bf\r')
     def find_negative_edge(self):
@@ -87,6 +93,8 @@ class Stage:
         time.sleep(MINIPAUSE)
         response = self.ser.readline()
         self.pos_dac = int(response.decode('ascii').strip().split(':')[-1])
+        print("{} {}".format(time.asctime(time.localtime()),
+            self.pos_dac), file = self.logfile)
     def pos(self, units='ps'):
         '''Units must be ps or mm'''
         self.tp()

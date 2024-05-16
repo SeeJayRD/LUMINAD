@@ -116,7 +116,10 @@ for k in range(0, NCycles):
         response = conn.getresponse()
         print('sleeping for {{}}'.format(pause))
         sleep(pause)
+
 conn.close()
+
+sleep(2)
 
 copydata()
 

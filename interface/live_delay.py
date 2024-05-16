@@ -24,7 +24,7 @@ class App(QtWidgets.QMainWindow):
         self.sl.setMinimumWidth(400)
         self.sl.setMinimum(MIN)
         self.sl.setMaximum(MAX)
-        self.sl.setValue(self.delay)
+        self.sl.setValue(int(self.delay)) #Qt slider only accepts ints
         self.sl.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.sl.setTickInterval(80)
         self.sl.valueChanged.connect(self.sl_valuechange)

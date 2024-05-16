@@ -23,8 +23,8 @@ cv2.setMouseCallback(wnam, callback)
 def myfun():
     while cv2.getWindowProperty(wnam, cv2.WND_PROP_VISIBLE) >= 1:
          ret, frame = cap.read()
-         frame[:,X,:] = np.zeros((480,3), dtype=np.uint8)
-         frame[Y,:,:] = np.zeros((640,3), dtype=np.uint8)
+         frame[:,X,:] = 255*np.ones((480,3), dtype=np.uint8)
+         frame[Y,:,:] = 255*np.ones((640,3), dtype=np.uint8)
          frame = cv2.resize(frame, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
          cv2.imshow(wnam, frame)
          c = cv2.waitKey(1)

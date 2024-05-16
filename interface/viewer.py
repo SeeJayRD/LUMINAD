@@ -162,10 +162,10 @@ class App(QtWidgets.QMainWindow):
         self.fetcher.start.emit()
         self.resize(WinH, WinV)
         self.image.view.scene().sigMouseClicked.connect(self.mouseClicked)
-        qtRectangle = self.frameGeometry()
-        centerPoint = QtWidgets.QDesktopWidget().availableGeometry().center()
-        qtRectangle.moveCenter(centerPoint)
-        self.move(qtRectangle.topRight())
+        #qtRectangle = self.frameGeometry()
+        #centerPoint = QtWidgets.QDesktopWidget().availableGeometry().center()
+        #qtRectangle.moveCenter(centerPoint)
+        #self.move(qtRectangle.topRight())
         self.show()
     def update_nframes(self, text):
         try:
