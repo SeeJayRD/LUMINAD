@@ -5,109 +5,13 @@ import json
 import serial
 import time
 import math
+from stage_driver_bea import Stage
 
-MINIPAUSE = 1e-3
-PAUSE = 1
-BIGPAUSE = 15
-dtdN = -8.33910238e-4 #picoseconds per DAC count
-MAXC = 800000
-POS_LIM = 16
-THRESH = 100
-t0_dac = 450000
-SPEEDC = 2.99792458e-1
 ADDRESS = ('localhost', 8000)
 TYPES = {'float' : float}
-LOGFILE = '/home/quadro/Logs/stage.log'
-
-class Stage:
-    def __init__(self):
-        try:
-            self.ser = serial.Serial('/dev/ttyUSB0', 9600)
-        except serial.SerialException:
-            self.ser = serial.Serial('/dev/ttyUSB1', 9600)
-        self.logfile = open(LOGFILE, 'a')
-        self.pos_dac = 0
-        self.stage_init()
-    def __del__(self):
-        self.shutdown()
-        self.logfile.close()
-    def address_controller(self):
-        self.ser.write(b'\x010\r')
-        time.sleep(PAUSE)
-        Nchar = self.ser.in_waiting
-        self.ser.read(Nchar)
-    def enable_amp(self):
-        self.ser.write(b'bf\r')
-    def find_negative_edge(self):
-        self.tp()
-        old_pos = self.pos_dac
-        self.ser.write(b'fe1\r')
-        print('seeking')
-        time.sleep(PAUSE)
-        self.tp()
-        while(math.fabs(old_pos - self.pos_dac)>THRESH):
-            old_pos = self.pos_dac
-            self.tp()
-            print('seeking')
-            time.sleep(PAUSE)
-    def define_home(self):
-        self.ser.write(b'dh\r')
-    def init_params(self):
-        self.ser.write(b'dp140\r')
-        self.ser.write(b'di20\r')
-        self.ser.write(b'dd600\r')
-        self.ser.write(b'dl2000\r')
-        self.ser.write(b'sv120000\r')
-        self.ser.write(b'sa800000\r')
-    def stage_init(self):
-        print('connecting to controller')
-        self.address_controller()
-        print('controller connected')
-        print('powering on amplifier')
-        self.enable_amp()
-        print('amplified powered on')
-        print('seeking edge')
-        self.find_negative_edge()
-        print('edge found')
-        print('initializing')
-        self.init_params()
-        print('verifying_edge')
-        time.sleep(PAUSE)
-        self.find_negative_edge()
-        self.define_home()
-        print('ready')
-    def move(self, t, units='ps'):
-        if units == 'ps':
-            counts = int(t/dtdN) + t0_dac
-        elif units == 'mm':
-            counts = int((2*t/SPEEDC)/dtdN) + t0_dac
-        else:
-            raise Exception('Units must be ps or mm')
-        if (math.fabs(counts) > 8.8e5) or counts < 0:
-            return
-        cmdstr = 'ma{}\r'.format(counts)
-        self.ser.write(bytes(cmdstr, 'ascii'))
-    def tp(self):
-        cmdstr = 'tp\r'
-        self.ser.write(bytes(cmdstr, 'ascii'))
-        time.sleep(MINIPAUSE)
-        response = self.ser.readline()
-        self.pos_dac = int(response.decode('ascii').strip().split(':')[-1])
-        print("{} {}".format(time.asctime(time.localtime()),
-            self.pos_dac), file = self.logfile)
-    def pos(self, units='ps'):
-        '''Units must be ps or mm'''
-        self.tp()
-        if units=='ps':
-            return dtdN*(self.pos_dac-t0_dac)
-        elif units=='mm':
-            return dtdN*(self.pos_dac-t0_dac)*0.5*SPEEDC
-        else:
-            raise Exception('Units must be ps or mm') 
-    def shutdown(self):
-        self.ser.write(b'rt\r')
 
 class StageServer(BaseHTTPRequestHandler):
+    stage = Stage()
     PVs = {'/':{'rdbk': {'val':0, 'units': 'ps', 'type':'float'}, 
         'set': {'val':0, 'units': 'ps', 'type':'float'},
         'buff0': {'val':0, 'stage':0, 'units': 'ps', 'type':'float'},
@@ -115,7 +19,6 @@ class StageServer(BaseHTTPRequestHandler):
         'buff2': {'val':0, 'stage':0, 'units': 'ps', 'type':'float'},
         'buff3': {'val':0, 'stage':0, 'units': 'ps', 'type':'float'},
         'buff4': {'val':0, 'stage':0, 'units': 'ps', 'type':'float'}}}
-    stage = Stage()
     def __init__(self, *args):
         super().__init__(*args)
     def do_GET(self):
@@ -157,6 +60,11 @@ class StageServer(BaseHTTPRequestHandler):
                         self.wfile.write(bytes(json.dumps(StageServer.PVs['/'][path[1]]), "utf-8"))
                 else:
                     self.wfile.write(bytes(json.dumps(StageServer.PVs['/'][path[1]]), "utf-8"))
+            elif path[1] == 'status':
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(bytes(json.dumps(StageServer.stage.report_status()), "utf-8"))
             else:
                 self.send_response(404)
                 self.end_headers()
@@ -175,7 +83,8 @@ class StageServer(BaseHTTPRequestHandler):
                     StageServer.PVs['/']['set']['val']=TYPES[StageServer.PVs['/']['set']['type']](val)
                     self.send_response(201)
                     self.end_headers()
-                    StageServer.stage.move(StageServer.PVs['/']['set']['val'], StageServer.PVs['/']['set']['units'])
+                    StageServer.stage.move(StageServer.PVs['/']['set']['val'],
+                            StageServer.PVs['/']['set']['units'])
                 except (KeyError, TypeError, ValueError):
                     self.send_response(400)
                     self.end_headers()
