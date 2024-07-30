@@ -11,7 +11,8 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot, QTimer
 from DEiger import DEigerClient as DEC
 
-#Irene was here
+#Irene was here, Irene returned
+#Hi, IRENE!
 TIMEOUT = 60
 PARAM = 'count_time'
 SCALE = 1000
