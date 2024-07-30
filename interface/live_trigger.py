@@ -13,6 +13,7 @@ from DEiger import DEigerClient as DEC
 
 #Irene was here, Irene returned
 #Hi, IRENE!
+#Also MG was here
 TIMEOUT = 60
 PARAM = 'count_time'
 SCALE = 1000
