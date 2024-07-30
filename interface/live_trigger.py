@@ -11,12 +11,13 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot, QTimer
 from DEiger import DEigerClient as DEC
 
-
+#Irene was here
 TIMEOUT = 60
 PARAM = 'count_time'
 SCALE = 1000
 DEFAULT = 100
 TYPE = float
+LOCK_PATH = "/tmp/.trigger_lock"
 
 def freq2period(freq):
     return int(1000.0/freq)
@@ -24,6 +25,11 @@ def freq2period(freq):
 class App(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        if os.path.exists(LOCK_PATH):
+            print("\033[1;38;5;196mA SCAN IS RUNNING:\033[m:\nA lock file indicates that another script is already sending triggers to the detector. If you are certain that no other scans are running, remove the lock file by opening a terminal and typing\n rm /tmp/.trigger_lock\n and try starting this trigger module again.")
+            sys.exit()
+        else:
+            os.mknod(LOCK_PATH)
         self.setWindowIcon(QtGui.QIcon('/home/quadro/Code/LUMINAD/stage/interface/assets/trigger.jpg'))
         ### flags ###
         self.busy = False
@@ -108,6 +114,7 @@ class App(QtWidgets.QMainWindow):
         self.start_btn.setStyleSheet('')
         self.stop_btn.setStyleSheet('')
     def closeEvent(self, event):
+        os.remove(LOCK_PATH)
         self.messenger.quit_sig.emit()
         self.thread.quit()
         self.thread.wait()
