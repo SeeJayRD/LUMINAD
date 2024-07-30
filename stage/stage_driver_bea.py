@@ -5,6 +5,7 @@ import sys
 import os
 
 #The password to the PC with the stage firmware is: common
+#---bea was here ----
 
 MINIPAUSE = 1e-3
 PAUSE = 1
